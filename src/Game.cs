@@ -14,7 +14,7 @@ public class Game
     int screenWidth = 1440;
     int screenHeight = 1080;
     int targetFPS = 240;
-    int tileSize = 48;
+    int tileSize = 32;
 
     int turns = 0;
 
@@ -44,18 +44,45 @@ public class Game
 
     public void run()
     {
+        FovSystem.computeFov(tiles, player.x, player.y, 15);
+
         while (!Raylib.WindowShouldClose())
         {
             handleInput();
 
-            bool madeTurn = player.handleInput(tiles);
-            if (madeTurn) turns++;
+            int px = player.x;
+            int py = player.y;
+
+            bool madeTurn = player.handleInput(tiles, entities);
+            if (madeTurn)
+            {
+                turns++;
+
+                Console.WriteLine("Made turn");
+
+                foreach (Entity entity in entities) {
+                    entity.update(tiles, player, entities);
+                }
+
+                FovSystem.computeFov(tiles, player.x, player.y, 15);
+            }
+
+            String playerModeText = player.playerMode.Equals(Player.PlayerMode.INTERACT_MODE) ? "INTERACT MODE" : "NORMAL MODE";
 
             camera.centerOnPosition(player.x, player.y, screenWidth, screenHeight);
 
             Raylib.BeginDrawing();
             renderer.render(tiles, entities, camera);
-            Raylib.DrawText($"turn #{turns}", 2, 2, 32, Color.White);
+
+            Raylib.DrawText($"turn #{turns}", 5, 5, 32, Color.White);
+            Raylib.DrawText(
+                playerModeText,
+                screenWidth / 2 - Raylib.MeasureText(playerModeText, 32) / 2,
+                5,
+                32,
+                Color.White
+            );
+
             Raylib.EndDrawing();
         }
     }
@@ -66,13 +93,14 @@ public class Game
 
         if (wheel != 0)
         {
-            renderer.setTileHeight(renderer.TileHeight + (wheel > 0 ? -1 : 1));
+            renderer.setTileHeight(renderer.TileHeight + (wheel > 0 ? 1 : -1));
 
             camera.tileWidth = renderer.TileWidth;
             camera.tileHeight = renderer.TileHeight;
         }
     }
 
+    // Relatively temporary
     public void loadMapFromImage(String filepath)
     {
         Image img = Raylib.LoadImage(filepath);
@@ -86,15 +114,40 @@ public class Game
             {
                 Color pixel = Raylib.GetImageColor(img, x, y);
 
-                if (pixel.Equals(Color.Black)) tiles[y][x] = new WallTile();
-                if (pixel.Equals(Color.White)) tiles[y][x] = new FloorTile(false);
-                if (pixel.Equals(Color.Brown)) tiles[y][x] = new DoorTile(false);
+                tiles[y][x] = new FloorTile(false);
 
-                if (pixel.Equals(new Color(0, 0, 255, 255))) 
+                if (pixel.Equals(Color.Black))     tiles[y][x] = new WallTile();
+                if (pixel.Equals(Color.DarkGreen)) tiles[y][x] = new FloorTile(false);
+                if (pixel.Equals(Color.Gray))      tiles[y][x] = new FloorTile(true);
+                if (pixel.Equals(Color.Brown))     tiles[y][x] = new DoorTile(false);
+                if (pixel.Equals(Color.Red))
+                {
+                    WindowTile windowTile = new WindowTile(false);
+                    WindowTile? neighbor = null;
+
+                    if (x > 0 && tiles[y][x - 1] is WindowTile leftWin) neighbor = leftWin;
+                    else if (y > 0 && tiles[y - 1][x] is WindowTile topWin) neighbor = topWin;
+
+                    if (neighbor != null)
+                    {
+                        neighbor.windowGroup ??= new List<WindowTile> { neighbor };
+                        neighbor.windowGroup.Add(windowTile);
+                        windowTile.windowGroup = neighbor.windowGroup;
+                    }
+
+                    tiles[y][x] = windowTile;
+                }
+                if (pixel.Equals(Color.Blue)) 
                 {
                     player.x = x;
                     player.y = y;
                     tiles[y][x] = new FloorTile(false);
+                }
+                if (pixel.Equals(Color.Green)) 
+                {
+                    tiles[y][x] = new FloorTile(false);
+                    Zombie zombie = new Zombie("Zombie", 100, x, y);
+                    entities.Add(zombie);
                 }
             }
         }

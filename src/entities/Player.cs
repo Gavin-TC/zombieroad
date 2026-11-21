@@ -5,13 +5,13 @@ namespace zombieroad.src.entities;
 
 public class Player : Entity
 {
-    private enum PlayerMode
+    public enum PlayerMode
     {
         NORMAL_MODE,
         INTERACT_MODE,
         PLAYER_MODE_COUNT
     }
-    private PlayerMode playerMode = PlayerMode.NORMAL_MODE;
+    public PlayerMode playerMode { get; set; } = PlayerMode.NORMAL_MODE;
 
     public Player(String name, int health, int x, int y) : base(name, health, x, y)
     {
@@ -20,22 +20,34 @@ public class Player : Entity
     }
 
     // Movement needs to be reworked later with custom delay and stuff
-    public bool handleInput(Tile[][] tiles)
+    public bool handleInput(Tile[][] tiles, List<Entity> entities)
     {
-        if (Raylib.IsKeyPressed(KeyboardKey.Escape))
+        KeyboardKey keyPressed = (KeyboardKey)Raylib.GetKeyPressed();
+
+        // Turn skip
+        if (Raylib.IsKeyPressedRepeat(KeyboardKey.Period) ||
+            keyPressed == KeyboardKey.Period)
+        {
+            return true;
+        }
+
+        if (keyPressed == KeyboardKey.Escape)
         {
             if (playerMode.Equals(PlayerMode.INTERACT_MODE))
             {
                 playerMode = PlayerMode.NORMAL_MODE;
+                return false;
             }
             else
             {
                 // Pause menu or somethin
+                return false;
             }
         }
-        else if (Raylib.IsKeyPressed(KeyboardKey.Space))
+        else if (keyPressed == KeyboardKey.Space)
         {
             playerMode = PlayerMode.INTERACT_MODE;
+            return false;
         }
 
         bool left  = Raylib.IsKeyDown(KeyboardKey.A);
@@ -52,13 +64,16 @@ public class Player : Entity
         int dx = (right ? 1 : 0) - (left ? 1 : 0);
         int dy = (down  ? 1 : 0) - (up   ? 1 : 0);
 
+        if (dx == 0 && dy == 0) return false;
+        if (!moveRequested) return false;
+
         switch (playerMode)
         {
             case PlayerMode.NORMAL_MODE:
-                if (!moveRequested || (dx == 0 && dy == 0)) return false;
-
-                if (!validMove(tiles, dx, dy))
+                if (!validMove(tiles, entities, dx, dy))
                 {
+                    Tile t = tiles[y + dy][x + dx];
+                    if (t is WindowTile wt) return false; // No bump interacting windows
                     return tryInteract(tiles, dx, dy);
                 }
 
@@ -68,28 +83,33 @@ public class Player : Entity
                 return true;
 
             case PlayerMode.INTERACT_MODE:
-                bool interaction = tryInteract(tiles, dx, dy);
+                playerMode = PlayerMode.NORMAL_MODE;
 
-                if (interaction)
-                {
-                    playerMode = PlayerMode.NORMAL_MODE;
-                    return true;
-                }
-
-                return false;
+                return tryInteract(tiles, dx, dy);
 
             default:
                 return false;
         }
     }
 
-    private bool validMove(Tile[][] tiles, int dx, int dy)
+    private bool validMove(Tile[][] tiles, List<Entity> entities, int dx, int dy)
     {
-        return !tiles[y + dy][x + dx].blocksMovement;
+        int tx = x + dx;
+        int ty = y + dy;
+
+        foreach (Entity entity in entities)
+        {
+            if (entity.x == tx && entity.y == ty)
+            {
+                return false;
+            }
+        }
+
+        return !tiles[ty][tx].blocksMovement;
     }
 
     private bool tryInteract(Tile[][] tiles, int dx, int dy)
     {
-        return tiles[y + dy][x + dx].interact(this);
+        return tiles[y + dy][x + dx].interact(this, tiles, x, y);
     }
 }

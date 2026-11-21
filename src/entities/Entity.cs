@@ -1,4 +1,5 @@
 ﻿using Raylib_cs;
+using zombieroad.src.tiles;
 
 namespace zombieroad.src.entities;
 
@@ -31,5 +32,9 @@ public class Entity
 
         this.x = x;
         this.y = y;
+    }
+
+    public virtual void update(Tile[][] tiles, Player player, List<Entity> entities)
+    {
     }
 }

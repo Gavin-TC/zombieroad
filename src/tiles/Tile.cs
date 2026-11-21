@@ -8,10 +8,14 @@ public class Tile {
     public Color fgColor;
     public Color bgColor;
 
-    public bool isIndoors;
-    public bool blocksMovement;
-    public bool blocksVision;
-    public bool blocksLight;
+    public bool isIndoors { get; set; }
+    public bool isVisible { get; set; } = false;
+    public bool isExplored { get; set; } = false; // Has the player seen this tile before
+    public bool blocksMovement { get; set; }
+    public bool blocksVision { get; set; }
+    public bool blocksLight { get; set; }
+
+    public Tile? underlyingTile { get; set; } // Tile underneath this tile, used for things that go overtop of floors, etc
 
     public Tile(
         byte glyph,
@@ -33,8 +37,28 @@ public class Tile {
         this.blocksLight = blocksLight;
     }
 
-    public virtual bool interact(Entity interactor)
+    public virtual bool interact(Entity interactor, Tile[][] tiles, int x, int y)
     {
         return false;
+    }
+
+    public virtual void setIsIndoors(bool isIndoors)
+    {
+        this.isIndoors = isIndoors;
+    }
+
+    public virtual void setBlocksMovement(bool blocksMovement)
+    {
+        this.blocksMovement = blocksMovement;
+    }
+
+    public virtual void setBlocksVision(bool blocksVision)
+    {
+        this.blocksVision = blocksVision;
+    }
+
+    public virtual void setBlocksLight(bool blocksLight)
+    {
+        this.blocksLight = blocksLight;
     }
 };

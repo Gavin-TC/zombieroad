@@ -1,5 +1,4 @@
-﻿
-using Raylib_cs;
+﻿using Raylib_cs;
 using System.Numerics;
 using zombieroad.src.entities;
 using zombieroad.src.tiles;
@@ -40,19 +39,21 @@ public class Renderer
         this.targetFPS = targetFPS;
 
         initRaylib();
+        setTileHeight(tileHeight);
     }
 
     private void initRaylib()
     {
         Raylib.InitWindow(screenWidth, screenHeight, title);
         Raylib.SetTargetFPS(targetFPS);
+        Raylib.SetExitKey(KeyboardKey.Null);
     }
 
     public void render(Tile[][] buffer, List<Entity> entities, Camera camera)
     {
         Raylib.ClearBackground(Color.Black);
         flushBuffer(buffer, camera);
-        drawEntities(entities, camera);
+        drawEntities(buffer, entities, camera);
     }
 
     private void flushBuffer(Tile[][] buffer, Camera camera)
@@ -68,19 +69,16 @@ public class Renderer
             for (int sx = 0; sx < cols; sx++)
             {
                 int worldX = camera.x + sx;
+
                 if (worldX < 0 || worldX >= buffer[worldY].Length) continue;
 
                 Tile tile = buffer[worldY][worldX];
+
+                if (!tile.isExplored) continue;
+                if (tile.glyph == 0 || tile.glyph == 32) continue;
+
                 int pixelX = sx * camera.tileWidth;
                 int pixelY = sy * camera.tileHeight;
-
-                // Draw background if visible
-                if (tile.bgColor.A > 0)
-                {
-                    Raylib.DrawRectangle(pixelX, pixelY, tileWidth, tileHeight, tile.bgColor);
-                }
-
-                if (tile.glyph == 0 || tile.glyph == 32) continue;
 
                 Rectangle srcRec = new Rectangle(
                     (tile.glyph % AtlasColumns) * cellWidth,
@@ -88,14 +86,15 @@ public class Renderer
                     cellWidth,
                     cellHeight
                 );
-
+                Color color = (tile.isExplored && !tile.isVisible) ? new Color(40, 40, 40, 255) : tile.fgColor;
                 Rectangle destRec = new Rectangle(pixelX, pixelY, camera.tileWidth, camera.tileHeight);
-                Raylib.DrawTexturePro(atlas, srcRec, destRec, Vector2.Zero, 0.0f, tile.fgColor);
+
+                Raylib.DrawTexturePro(atlas, srcRec, destRec, Vector2.Zero, 0.0f, color);
             }
         } 
     }
 
-    public void drawEntities(List<Entity> entities, Camera camera)
+    public void drawEntities(Tile[][] tiles, List<Entity> entities, Camera camera)
     {
         foreach (Entity entity in entities) {
             int sx = entity.x - camera.x;
@@ -108,6 +107,8 @@ public class Renderer
 
             int pixelX = sx * camera.tileWidth;
             int pixelY = sy * camera.tileHeight;
+
+            if (!tiles[entity.y][entity.x].isVisible) continue;
 
             Raylib.DrawRectangle(pixelX, pixelY, camera.tileWidth, camera.tileHeight, Color.Black);
 
@@ -141,8 +142,9 @@ public class Renderer
 
     public void setTileHeight(int tileHeight)
     {
-        tileSize = Math.Clamp(tileHeight, 8, 128);
-        this.tileHeight = tileSize;
+        tileHeight = Math.Clamp(tileHeight, 32, 64);
+        this.tileHeight = tileHeight;
+        tileSize = tileHeight;
         tileWidth = (int)MathF.Round(tileHeight * (cellWidth / (float)cellHeight));
     }
 }
