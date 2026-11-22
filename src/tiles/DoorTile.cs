@@ -39,9 +39,11 @@ public class DoorTile : Tile
         }
     }
 
-    public override bool interact(Entity interactor, Tile[][] tiles, int x, int y)
+    public override bool interact(Entity interactor, List<Entity> entities, Tile[][] tiles, int x, int y)
     {
-        if (isBlocked) return false;
+        bool isOccupied = entities.Any(e => e.x == x && e.y == y && e != interactor);
+
+        if (isBlocked || isOccupied) return false;
 
         if (isLocked)
         {

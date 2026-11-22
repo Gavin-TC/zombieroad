@@ -12,95 +12,137 @@ public class Zombie : Entity
         IDLE,
         WANDER,
         PURSUE,
-        ATTACKING,
+        ATTACK,
         STATES_COUNT
     };
     private State state = State.IDLE;
 
-    private Random rand;
-
-    private int wanderX = -1;
-    private int wanderY = -1;
-    private int wanderRange = 7;
-    private float wanderChance = 0.15f; // Chance to wander from idle
-
+    private float wanderChance = 0.08f; // Chance to wander from idle
+    private int defDetectionRange = 15;
     private int detectionRange = 15;
+
+    private int attackDamage = 15;
+
+    private int moveCost = 100;
+    private int energy = 0;
+    private int energyAcc = 75;
+
+    private int ticks = 0;
+    private int memoryTicks = 15;
+
+    private int lastKnownPlayerX = -1;
+    private int lastKnownPlayerY = -1;
+
+    // Player position the zombie failed to path to, retried once the player moves
+    private int blockedX = -1;
+    private int blockedY = -1;
 
     public Zombie(String name, int health, int x, int y) : base(name, health, x, y)
     {
         glyph = 2;
         fgColor = Color.Green;
-        rand = new Random();
     }
 
-    public override void update(Tile[][] tiles, Player player, List<Entity> entities)
+    public override void update(Tile[][] tiles, List<Entity> entities, Player player)
     {
+        energy += energyAcc;
+        if (!(energy >= moveCost)) return;
+        performAction(tiles, entities, player);
+        energy -= moveCost;
+    }
+
+    private void performAction(Tile[][] tiles, List<Entity> entities, Player player)
+    {
+        Tile tile = tiles[y][x];
         int width = tiles[0].Length;
         int height = tiles.Length;
-
         int playerDist = Math.Abs(x - player.x) + Math.Abs(y - player.y);
+        int attackDist = Math.Max(Math.Abs(x - player.x), Math.Abs(y - player.y));
+        bool targetBlocked = player.x == blockedX && player.y == blockedY;
 
-        if (playerDist <= detectionRange)
+        if (attackDist == 1)
         {
-            if (state != State.PURSUE && tiles[y][x].isVisible == true)
-                state = State.PURSUE;
+            state = State.ATTACK;
+        }
+        else if (playerDist <= detectionRange && tile.isVisible && !targetBlocked)
+        {
+            state = State.PURSUE;
+            ticks = 0;
+            lastKnownPlayerX = player.x;
+            lastKnownPlayerY = player.y;
+        }
+        else if (state == State.PURSUE && ticks < memoryTicks)
+        {
+        }
+        else if (state != State.WANDER)
+        {
+            state = State.IDLE;
         }
 
         switch (state)
         {
             case State.IDLE:
-                float wanderRoll = (float)rand.NextDouble();
+                float wanderRoll = (float)Random.Shared.NextDouble();
+                float variance   = (float)Random.Shared.Next(-2, 3) / 100;
 
-                if (wanderRoll <= wanderChance) state = State.WANDER;
+                if (wanderRoll <= wanderChance + variance) state = State.WANDER;
+
+                ticks = 0;
 
                 break;
 
-            case State.WANDER:
-                if (wanderX == -1 && wanderY == -1)
-                {
-                    while (!Pathfinding.inBounds(wanderX, wanderY, width, height))
-                    {
-                        wanderX = x + rand.Next(-wanderRange, wanderRange + 1);
-                        wanderY = y + rand.Next(-wanderRange, wanderRange + 1);
-                    }
-                }
+            case State.WANDER: // Wanders to a surrounding tile
+                (int dx, int dy) = Pathfinding.dirs[Random.Shared.Next(Pathfinding.dirs.Length)];
+                int goalX = x + dx;
+                int goalY = y + dy;
 
-                if (x == wanderX && y == wanderY)
-                {
-                    wanderX = -1;
-                    wanderY = -1;
-                    state = State.IDLE;
-                    return;
-                }
+                (int x, int y)? wTarget = Pathfinding.FindNextStepGbfs(tiles, entities, x, y, goalX, goalY);
 
-                // Move towards wander pos
-                (int x, int y)? target = Pathfinding.FindNextStepGbfs(
+                if (wTarget == null) break;
+
+                bool isOccupied = entities.Any(e => e.x == wTarget.Value.x && e.y == wTarget.Value.y) ||
+                                  (player.x == wTarget.Value.x && player.y == wTarget.Value.y);
+
+                if (!isOccupied) (x, y) = wTarget.Value;
+
+                state = State.IDLE;
+                break;
+
+            case State.PURSUE:
+                (int x, int y)? pTarget = Pathfinding.FindNextStepGbfs(
                     tiles,
                     entities,
                     x,
                     y,
-                    wanderX,
-                    wanderY
+                    lastKnownPlayerX,
+                    lastKnownPlayerY
                 );
 
-                if (target == null)
+                if (pTarget == null)
                 {
-                    wanderX = -1;
-                    wanderY = -1;
-                    state = State.IDLE;
-                    return;
+                    blockedX = lastKnownPlayerX;
+                    blockedY = lastKnownPlayerY;
+                    state = State.WANDER;
+                    break;
                 }
 
-                (x, y) = target.Value;
+                if ((player.x, player.y) == pTarget.Value)
+                {
+                    state = State.ATTACK;
+                }
+                else
+                {
+                    (x, y) = pTarget.Value;
+                }
 
                 break;
 
-            case State.PURSUE:
-
-                break;
-
-            case State.ATTACKING:
+            case State.ATTACK:
+                detectionRange = defDetectionRange;
+                player.damage(attackDamage);
                 break;
         }
+
+        ticks++;
     }
 }

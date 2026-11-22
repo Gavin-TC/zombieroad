@@ -9,6 +9,7 @@ public class WindowTile : Tile
     private const byte closedGlyph = 178;
 
     public bool blindsOpen { get; set; }
+    public bool isPeeked { get; private set; }
     public List<WindowTile>? windowGroup { get; set; }
 
     public WindowTile(bool blindsOpen) : base(178, Color.White, Color.Black, true, true, true, true)
@@ -18,6 +19,8 @@ public class WindowTile : Tile
 
     private void setBlindsState(bool open)
     {
+        isPeeked = false;
+
         if (open)
         {
             glyph = openedGlyph;
@@ -34,10 +37,19 @@ public class WindowTile : Tile
         }
     }
 
-    public override bool interact(Entity interactor, Tile[][] tiles, int x, int y)
+    public void setPeeking(bool peeking)
+    {
+        if (blindsOpen) return; // Nothing to peek through
+
+        isPeeked = peeking;
+        blocksVision = !peeking; // blocksLight stays true, the blinds are still closed
+    }
+
+    public override bool interact(Entity interactor, List<Entity> entities, Tile[][] tiles, int x, int y)
     {
         // Only allow window interaction if player is on an indoor tile
-        if (!tiles[(int)y][(int)x].isIndoors) return false;
+        // (stops player from opening windows from outside)
+        if (!tiles[y][x].isIndoors) return false;
 
         if (windowGroup != null)
         {

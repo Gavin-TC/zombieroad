@@ -37,7 +37,7 @@ public class Tile {
         this.blocksLight = blocksLight;
     }
 
-    public virtual bool interact(Entity interactor, Tile[][] tiles, int x, int y)
+    public virtual bool interact(Entity interactor, List<Entity> entities, Tile[][] tiles, int x, int y)
     {
         return false;
     }

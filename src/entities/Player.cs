@@ -9,9 +9,12 @@ public class Player : Entity
     {
         NORMAL_MODE,
         INTERACT_MODE,
+        PEEK_MODE,
         PLAYER_MODE_COUNT
     }
     public PlayerMode playerMode { get; set; } = PlayerMode.NORMAL_MODE;
+
+    private WindowTile? peekedWindow;
 
     public Player(String name, int health, int x, int y) : base(name, health, x, y)
     {
@@ -28,12 +31,13 @@ public class Player : Entity
         if (Raylib.IsKeyPressedRepeat(KeyboardKey.Period) ||
             keyPressed == KeyboardKey.Period)
         {
+            endPeek();
             return true;
         }
 
         if (keyPressed == KeyboardKey.Escape)
         {
-            if (playerMode.Equals(PlayerMode.INTERACT_MODE))
+            if (!playerMode.Equals(PlayerMode.NORMAL_MODE))
             {
                 playerMode = PlayerMode.NORMAL_MODE;
                 return false;
@@ -47,6 +51,11 @@ public class Player : Entity
         else if (keyPressed == KeyboardKey.Space)
         {
             playerMode = PlayerMode.INTERACT_MODE;
+            return false;
+        }
+        else if (keyPressed == KeyboardKey.P)
+        {
+            playerMode = PlayerMode.PEEK_MODE;
             return false;
         }
 
@@ -74,8 +83,14 @@ public class Player : Entity
                 {
                     Tile t = tiles[y + dy][x + dx];
                     if (t is WindowTile wt) return false; // No bump interacting windows
-                    return tryInteract(tiles, dx, dy);
+
+                    bool interacted = tryInteract(tiles, entities, dx, dy);
+                    if (interacted) endPeek();
+
+                    return interacted;
                 }
+
+                endPeek();
 
                 x += dx;
                 y += dy;
@@ -85,7 +100,15 @@ public class Player : Entity
             case PlayerMode.INTERACT_MODE:
                 playerMode = PlayerMode.NORMAL_MODE;
 
-                return tryInteract(tiles, dx, dy);
+                bool done = tryInteract(tiles, entities, dx, dy);
+                if (done) endPeek();
+
+                return done;
+
+            case PlayerMode.PEEK_MODE:
+                playerMode = PlayerMode.NORMAL_MODE;
+
+                return tryPeek(tiles, dx, dy);
 
             default:
                 return false;
@@ -108,8 +131,29 @@ public class Player : Entity
         return !tiles[ty][tx].blocksMovement;
     }
 
-    private bool tryInteract(Tile[][] tiles, int dx, int dy)
+    private bool tryPeek(Tile[][] tiles, int dx, int dy)
     {
-        return tiles[y + dy][x + dx].interact(this, tiles, x, y);
+        if (!tiles[y][x].isIndoors) return false;
+
+        Tile target = tiles[y + dy][x + dx];
+
+        if (target is not WindowTile window || window.blindsOpen) return false;
+
+        endPeek();
+        window.setPeeking(true);
+        peekedWindow = window;
+
+        return true;
+    }
+
+    private void endPeek()
+    {
+        peekedWindow?.setPeeking(false);
+        peekedWindow = null;
+    }
+
+    private bool tryInteract(Tile[][] tiles, List<Entity> entities, int dx, int dy)
+    {
+        return tiles[y + dy][x + dx].interact(this, entities, tiles, x, y);
     }
 }

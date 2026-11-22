@@ -34,7 +34,14 @@ public class Entity
         this.y = y;
     }
 
-    public virtual void update(Tile[][] tiles, Player player, List<Entity> entities)
+    public virtual void update(Tile[][] tiles, List<Entity> entities, Player player)
     {
+    }
+
+    public virtual void damage(int damage)
+    {
+        health = Math.Max(health - damage, 0);
+
+        if (health == 0) Console.WriteLine($"{name} died");
     }
 }

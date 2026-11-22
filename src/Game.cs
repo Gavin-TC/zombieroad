@@ -61,13 +61,18 @@ public class Game
                 Console.WriteLine("Made turn");
 
                 foreach (Entity entity in entities) {
-                    entity.update(tiles, player, entities);
+                    entity.update(tiles, entities, player);
                 }
 
                 FovSystem.computeFov(tiles, player.x, player.y, 15);
             }
 
-            String playerModeText = player.playerMode.Equals(Player.PlayerMode.INTERACT_MODE) ? "INTERACT MODE" : "NORMAL MODE";
+            String playerModeText = player.playerMode switch
+            {
+                Player.PlayerMode.INTERACT_MODE => "INTERACT MODE",
+                Player.PlayerMode.PEEK_MODE => "PEEK MODE",
+                _ => "NORMAL MODE"
+            };
 
             camera.centerOnPosition(player.x, player.y, screenWidth, screenHeight);
 
@@ -145,7 +150,7 @@ public class Game
                 }
                 if (pixel.Equals(Color.Green)) 
                 {
-                    tiles[y][x] = new FloorTile(false);
+                    tiles[y][x] = new FloorTile(tiles[y][x - 1].isIndoors);
                     Zombie zombie = new Zombie("Zombie", 100, x, y);
                     entities.Add(zombie);
                 }

@@ -5,7 +5,7 @@ namespace zombieroad.src.systems;
 
 public static class Pathfinding
 {
-    private static readonly (int dx, int dy)[] dirs =
+    public static readonly (int dx, int dy)[] dirs =
     {
         (0, -1), (0, 1), (-1, 0), (1, 0),   // Cardinal
         (-1, -1), (1, -1), (-1, 1), (1, 1)  // Diagonal
@@ -68,13 +68,7 @@ public static class Pathfinding
         return null;
     }
 
-    private static bool isWalkable(
-        Tile[][] tiles,
-        List<Entity> entities,
-        int x,
-        int y,
-        int goalX,
-        int goalY)
+    private static bool isWalkable(Tile[][] tiles, List<Entity> entities, int x, int y, int goalX, int goalY)
     {
         if (!inBounds(x, y, tiles[0].Length, tiles.Length)) return false;
 
