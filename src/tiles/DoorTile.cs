@@ -5,7 +5,7 @@ namespace zombieroad.src.tiles;
 
 public class DoorTile : Tile
 {
-    private const byte openedGlyph = (byte)'+';
+    private const byte openedGlyph = 239;
     private const byte closedGlyph = (byte)'=';
     private bool isOpen { get; set; }
     private bool isLocked { get; set; }
@@ -39,7 +39,7 @@ public class DoorTile : Tile
         }
     }
 
-    public override bool interact(Entity interactor, List<Entity> entities, Tile[][] tiles, int x, int y)
+    public override bool interact(TileMap map, List<Entity> entities, Entity interactor, int x, int y)
     {
         bool isOccupied = entities.Any(e => e.x == x && e.y == y && e != interactor);
 

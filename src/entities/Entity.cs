@@ -34,7 +34,7 @@ public class Entity
         this.y = y;
     }
 
-    public virtual void update(Tile[][] tiles, List<Entity> entities, Player player)
+    public virtual void update(TileMap map, List<Entity> entities, Player player)
     {
     }
 

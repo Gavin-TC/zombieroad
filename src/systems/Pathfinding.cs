@@ -12,7 +12,7 @@ public static class Pathfinding
     };
 
     public static (int x, int y)? FindNextStepGbfs(
-        Tile[][] tiles,
+        TileMap map,
         List<Entity> entities,
         int startX,
         int startY,
@@ -22,8 +22,8 @@ public static class Pathfinding
     {
         if (startX == goalX && startY == goalY) return null;
 
-        int width = tiles[0].Length;
-        int height = tiles.Length;
+        int width = map.width;
+        int height = map.height;
 
         if (!inBounds(goalX, goalY, width, height)) return null;
 
@@ -54,7 +54,7 @@ public static class Pathfinding
 
                 if (visited.Contains(next)) continue;
 
-                if (!isWalkable(tiles, entities, nx, ny, goalX, goalY)) continue;
+                if (!isWalkable(map, entities, nx, ny, goalX, goalY)) continue;
 
                 if (!cameFrom.ContainsKey(next))
                 {
@@ -68,11 +68,11 @@ public static class Pathfinding
         return null;
     }
 
-    private static bool isWalkable(Tile[][] tiles, List<Entity> entities, int x, int y, int goalX, int goalY)
+    private static bool isWalkable(TileMap map, List<Entity> entities, int x, int y, int goalX, int goalY)
     {
-        if (!inBounds(x, y, tiles[0].Length, tiles.Length)) return false;
+        if (!map.inBounds(x, y)) return false;
 
-        if (tiles[y][x].blocksMovement) return false;
+        if (map.blocksMovement(x, y)) return false;
 
         if (x != goalX || y != goalY)
         {

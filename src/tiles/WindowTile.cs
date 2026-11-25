@@ -6,6 +6,7 @@ namespace zombieroad.src.tiles;
 public class WindowTile : Tile
 {
     private const byte openedGlyph = 176;
+    private const byte peekedGlyph = 177;
     private const byte closedGlyph = 178;
 
     public bool blindsOpen { get; set; }
@@ -43,13 +44,22 @@ public class WindowTile : Tile
 
         isPeeked = peeking;
         blocksVision = !peeking; // blocksLight stays true, the blinds are still closed
+
+        if (isPeeked)
+        {
+            glyph = peekedGlyph;
+        }
+        else
+        {
+            glyph = blindsOpen ? openedGlyph : closedGlyph;
+        }
     }
 
-    public override bool interact(Entity interactor, List<Entity> entities, Tile[][] tiles, int x, int y)
+    public override bool interact(TileMap map, List<Entity> entities, Entity interactor, int x, int y)
     {
         // Only allow window interaction if player is on an indoor tile
         // (stops player from opening windows from outside)
-        if (!tiles[y][x].isIndoors) return false;
+        if (!map.isIndoors(interactor.x, interactor.y)) return false;
 
         if (windowGroup != null)
         {

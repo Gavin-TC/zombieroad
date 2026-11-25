@@ -23,7 +23,7 @@ public class Player : Entity
     }
 
     // Movement needs to be reworked later with custom delay and stuff
-    public bool handleInput(Tile[][] tiles, List<Entity> entities)
+    public bool handleInput(TileMap tileMap, List<Entity> entities)
     {
         KeyboardKey keyPressed = (KeyboardKey)Raylib.GetKeyPressed();
 
@@ -31,7 +31,6 @@ public class Player : Entity
         if (Raylib.IsKeyPressedRepeat(KeyboardKey.Period) ||
             keyPressed == KeyboardKey.Period)
         {
-            endPeek();
             return true;
         }
 
@@ -73,18 +72,19 @@ public class Player : Entity
         int dx = (right ? 1 : 0) - (left ? 1 : 0);
         int dy = (down  ? 1 : 0) - (up   ? 1 : 0);
 
-        if (dx == 0 && dy == 0) return false;
-        if (!moveRequested) return false;
+        if (dx == 0 && dy == 0 || !moveRequested) return false;
 
         switch (playerMode)
         {
             case PlayerMode.NORMAL_MODE:
-                if (!validMove(tiles, entities, dx, dy))
+                if (!validMove(tileMap, entities, dx, dy))
                 {
-                    Tile t = tiles[y + dy][x + dx];
-                    if (t is WindowTile wt) return false; // No bump interacting windows
+                    int tx = x + dx;
+                    int ty = y + dy;
+                    if (!tileMap.inBounds(tx, ty)) return false;
+                    if (tileMap.objects[ty][tx] is WindowTile) return false; // No bump interacting windows
 
-                    bool interacted = tryInteract(tiles, entities, dx, dy);
+                    bool interacted = tryInteract(tileMap, entities, dx, dy);
                     if (interacted) endPeek();
 
                     return interacted;
@@ -100,25 +100,26 @@ public class Player : Entity
             case PlayerMode.INTERACT_MODE:
                 playerMode = PlayerMode.NORMAL_MODE;
 
-                bool done = tryInteract(tiles, entities, dx, dy);
+                bool done = tryInteract(tileMap, entities, dx, dy);
                 if (done) endPeek();
 
                 return done;
 
             case PlayerMode.PEEK_MODE:
                 playerMode = PlayerMode.NORMAL_MODE;
-
-                return tryPeek(tiles, dx, dy);
+                return tryPeek(tileMap, dx, dy);
 
             default:
                 return false;
         }
     }
 
-    private bool validMove(Tile[][] tiles, List<Entity> entities, int dx, int dy)
+    private bool validMove(TileMap tileMap, List<Entity> entities, int dx, int dy)
     {
         int tx = x + dx;
         int ty = y + dy;
+
+        if (!tileMap.inBounds(tx, ty)) return false;
 
         foreach (Entity entity in entities)
         {
@@ -128,14 +129,15 @@ public class Player : Entity
             }
         }
 
-        return !tiles[ty][tx].blocksMovement;
+        return !tileMap.blocksMovement(tx, ty);
     }
 
-    private bool tryPeek(Tile[][] tiles, int dx, int dy)
+    private bool tryPeek(TileMap tileMap, int dx, int dy)
     {
-        if (!tiles[y][x].isIndoors) return false;
+        if (!tileMap.objects[y][x]?.isIndoors ?? true) return false;
+        if (!tileMap.inBounds(x + dx, y + dy)) return false;
 
-        Tile target = tiles[y + dy][x + dx];
+        Tile? target = tileMap.objects[y + dy][x + dx];
 
         if (target is not WindowTile window || window.blindsOpen) return false;
 
@@ -152,8 +154,23 @@ public class Player : Entity
         peekedWindow = null;
     }
 
-    private bool tryInteract(Tile[][] tiles, List<Entity> entities, int dx, int dy)
+    private bool tryInteract(TileMap tileMap, List<Entity> entities, int dx, int dy)
     {
-        return tiles[y + dy][x + dx].interact(this, entities, tiles, x, y);
+        if (!tileMap.inBounds(x + dx, y + dy)) return false;
+
+        Tile? targetTile = tileMap.objects[y + dy][x + dx];
+        if (targetTile is null) return false;
+
+        return targetTile.interact(tileMap, entities, this, x + dx, y + dy);
+    }
+
+    public void setX(int x)
+    {
+        this.x = x;
+    }
+
+    public void setY(int y)
+    {
+        this.y = y;
     }
 }

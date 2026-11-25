@@ -1,41 +1,60 @@
-﻿using zombieroad.src.tiles;
+using zombieroad.src.tiles;
 
 namespace zombieroad.src.rendering;
 
 public static class FovSystem {
-    public static void computeFov(Tile[][] tiles, int px, int py, int radius)
+    public static void computeFov(TileMap map, int px, int py, int radius)
     {
-        for (int y = 0; y < tiles.Length; y++)
+        if (map is null || map.height == 0) return;
+
+        for (int y = 0; y < map.height; y++)
         {
-            for (int x = 0; x < tiles[y].Length; x++)
+            for (int x = 0; x < map.width; x++)
             {
-                tiles[y][x].isVisible = false;
+                map.floor[y][x].isVisible = false;
+
+                Tile? obj = map.objects[y][x];
+                if (obj is not null) obj.isVisible = false;
             }
         }
 
         int minX = Math.Max(0, px - radius);
-        int maxX = Math.Min(tiles[0].Length - 1, px + radius);
+        int maxX = Math.Min(map.width - 1, px + radius);
         int minY = Math.Max(0, py - radius);
-        int maxY = Math.Min(tiles.Length - 1, py + radius);
+        int maxY = Math.Min(map.height - 1, py + radius);
+        int radiusSq = radius * radius + radius;
 
         for (int x = minX; x <= maxX; x++)
         {
-            CastRay(tiles, px, py, x, minY);
-            CastRay(tiles, px, py, x, maxY);
+            CastRay(map, px, py, x, minY, radiusSq);
+            CastRay(map, px, py, x, maxY, radiusSq);
         }
 
         for (int y = minY + 1; y < maxY; y++)
         {
-            CastRay(tiles, px, py, minX, y);
-            CastRay(tiles, px, py, maxX, y);
+            CastRay(map, px, py, minX, y, radiusSq);
+            CastRay(map, px, py, maxX, y, radiusSq);
         }
 
-        tiles[py][px].isVisible = true;
-        tiles[py][px].isExplored = true;
+        markSeen(map, px, py);
+    }
+
+    private static void markSeen(TileMap map, int x, int y)
+    {
+        Tile floorTile = map.floor[y][x];
+        floorTile.isVisible = true;
+        floorTile.isExplored = true;
+
+        Tile? obj = map.objects[y][x];
+        if (obj is not null)
+        {
+            obj.isVisible = true;
+            obj.isExplored = true;
+        }
     }
 
     // Bresenham's line rays
-    private static void CastRay(Tile[][] tiles, int x0, int y0, int x1, int y1)
+    private static void CastRay(TileMap map, int x0, int y0, int x1, int y1, int radiusSq)
     {
         int dx = Math.Abs(x1 - x0);
         int dy = Math.Abs(y1 - y0);
@@ -48,16 +67,17 @@ public static class FovSystem {
 
         while (true)
         {
-            if (curY < 0 || curY >= tiles.Length || curX < 0 || curX >= tiles[curY].Length)
+            if (!map.inBounds(curX, curY))
                 break;
 
-            Tile tile = tiles[curY][curX];
+            int ddx = curX - x0;
+            int ddy = curY - y0;
+            if (ddx * ddx + ddy * ddy > radiusSq) break;
 
-            tile.isVisible = true;
-            tile.isExplored = true;
+            markSeen(map, curX, curY);
 
             // If this tile blocks vision, stop the ray
-            if (tile.blocksVision && (curX != x0 || curY != y0)) break;
+            if (map.blocksVision(curX, curY) && (curX != x0 || curY != y0)) break;
 
             if (curX == x1 && curY == y1) break;
 

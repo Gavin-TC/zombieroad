@@ -49,30 +49,31 @@ public class Renderer
         Raylib.SetExitKey(KeyboardKey.Null);
     }
 
-    public void render(Tile[][] buffer, List<Entity> entities, Camera camera)
+    public void render(TileMap tileMap, List<Entity> entities, Camera camera)
     {
         Raylib.ClearBackground(Color.Black);
-        flushBuffer(buffer, camera);
-        drawEntities(buffer, entities, camera);
+        flushBuffer(tileMap, camera);
+        drawObjects(tileMap, entities, camera);
     }
 
-    private void flushBuffer(Tile[][] buffer, Camera camera)
+    private void flushBuffer(TileMap tileMap, Camera camera)
     {
+        Tile[][] floor = tileMap.floor;
         int cols = (screenWidth / camera.tileWidth) + 1;
         int rows = (screenHeight / camera.tileHeight) + 1;
 
         for (int sy = 0; sy < rows; sy++)
         {
             int worldY = camera.y + sy;
-            if (worldY < 0 || worldY >= buffer.Length) continue;
+            if (worldY < 0 || worldY >= floor.Length) continue;
 
             for (int sx = 0; sx < cols; sx++)
             {
                 int worldX = camera.x + sx;
 
-                if (worldX < 0 || worldX >= buffer[worldY].Length) continue;
+                if (worldX < 0 || worldX >= floor[worldY].Length) continue;
 
-                Tile tile = buffer[worldY][worldX];
+                Tile tile = floor[worldY][worldX];
 
                 if (!tile.isExplored) continue;
                 if (tile.glyph == 0 || tile.glyph == 32) continue;
@@ -81,8 +82,8 @@ public class Renderer
                 int pixelY = sy * camera.tileHeight;
 
                 Rectangle srcRec = new Rectangle(
-                    (tile.glyph % AtlasColumns) * cellWidth,
-                    (tile.glyph / AtlasColumns) * cellHeight,
+                    tile.glyph % AtlasColumns * cellWidth,
+                    tile.glyph / AtlasColumns * cellHeight,
                     cellWidth,
                     cellHeight
                 );
@@ -94,27 +95,60 @@ public class Renderer
         } 
     }
 
-    public void drawEntities(Tile[][] tiles, List<Entity> entities, Camera camera)
+    public void drawObjects(TileMap tileMap, List<Entity> entities, Camera camera)
     {
+        Tile[][] floor = tileMap.floor;
+        Tile?[][] objects = tileMap.objects;
+        int cols = (screenWidth / camera.tileWidth) + 1;
+        int rows = (screenHeight / camera.tileHeight) + 1;
+
+        for (int sy = 0; sy < rows; sy++)
+        {
+            int worldY = camera.y + sy;
+            if (worldY < 0 || worldY >= objects.Length) continue;
+
+            for (int sx = 0; sx < cols; sx++)
+            {
+                int worldX = camera.x + sx;
+                if (worldX < 0 || worldX >= objects[worldY].Length) continue;
+
+                Tile? obj = objects[worldY][worldX];
+                if (obj is null || !obj.isExplored) continue;
+
+                int pixelX = sx * camera.tileWidth;
+                int pixelY = sy * camera.tileHeight;
+
+                Raylib.DrawRectangle(pixelX, pixelY, camera.tileWidth, camera.tileHeight, Color.Black);
+
+                Rectangle srcRec = new Rectangle(
+                    obj.glyph % AtlasColumns * cellWidth,
+                    obj.glyph / AtlasColumns * cellHeight,
+                    cellWidth,
+                    cellHeight
+                );
+                Rectangle destRec = new Rectangle(pixelX, pixelY, camera.tileWidth, camera.tileHeight);
+                Color color = obj.isVisible ? obj.fgColor : new Color(40, 40, 40, 255);
+
+                Raylib.DrawTexturePro(atlas, srcRec, destRec, Vector2.Zero, 0.0f, color);
+            }
+        }
+
         foreach (Entity entity in entities) {
             int sx = entity.x - camera.x;
             int sy = entity.y - camera.y;
-
-            int cols = (screenWidth / camera.tileWidth) + 1;
-            int rows = (screenHeight / camera.tileHeight) + 1;
 
             if (sx < 0 || sx >= cols || sy < 0 || sy >= rows) continue;
 
             int pixelX = sx * camera.tileWidth;
             int pixelY = sy * camera.tileHeight;
 
-            if (!tiles[entity.y][entity.x].isVisible) continue;
+            if (!floor[entity.y][entity.x].isVisible) continue;
 
             Raylib.DrawRectangle(pixelX, pixelY, camera.tileWidth, camera.tileHeight, Color.Black);
 
             Rectangle srcRect = new Rectangle(
-                (entity.glyph % AtlasColumns) * cellWidth,
-                (entity.glyph / AtlasColumns) * cellHeight,
+                entity.glyph % AtlasColumns * cellWidth,
+                entity.glyph / AtlasColumns * cellHeight,
                 cellWidth,
                 cellHeight
             );

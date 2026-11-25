@@ -17,7 +17,7 @@ public class Zombie : Entity
     };
     private State state = State.IDLE;
 
-    private float wanderChance = 0.08f; // Chance to wander from idle
+    private float wanderChance = 0.16f; // Chance to wander from idle
     private int defDetectionRange = 15;
     private int detectionRange = 15;
 
@@ -43,19 +43,17 @@ public class Zombie : Entity
         fgColor = Color.Green;
     }
 
-    public override void update(Tile[][] tiles, List<Entity> entities, Player player)
+    public override void update(TileMap map, List<Entity> entities, Player player)
     {
         energy += energyAcc;
         if (!(energy >= moveCost)) return;
-        performAction(tiles, entities, player);
+        performAction(map, entities, player);
         energy -= moveCost;
     }
 
-    private void performAction(Tile[][] tiles, List<Entity> entities, Player player)
+    private void performAction(TileMap map, List<Entity> entities, Player player)
     {
-        Tile tile = tiles[y][x];
-        int width = tiles[0].Length;
-        int height = tiles.Length;
+        Tile tile = map.floor[y][x];
         int playerDist = Math.Abs(x - player.x) + Math.Abs(y - player.y);
         int attackDist = Math.Max(Math.Abs(x - player.x), Math.Abs(y - player.y));
         bool targetBlocked = player.x == blockedX && player.y == blockedY;
@@ -96,7 +94,7 @@ public class Zombie : Entity
                 int goalX = x + dx;
                 int goalY = y + dy;
 
-                (int x, int y)? wTarget = Pathfinding.FindNextStepGbfs(tiles, entities, x, y, goalX, goalY);
+                (int x, int y)? wTarget = Pathfinding.FindNextStepGbfs(map, entities, x, y, goalX, goalY);
 
                 if (wTarget == null) break;
 
@@ -110,7 +108,7 @@ public class Zombie : Entity
 
             case State.PURSUE:
                 (int x, int y)? pTarget = Pathfinding.FindNextStepGbfs(
-                    tiles,
+                    map,
                     entities,
                     x,
                     y,
