@@ -27,14 +27,14 @@ public static class FovSystem {
 
         for (int x = minX; x <= maxX; x++)
         {
-            CastRay(map, px, py, x, minY, radiusSq);
-            CastRay(map, px, py, x, maxY, radiusSq);
+            castRay(map, px, py, x, minY, radiusSq);
+            castRay(map, px, py, x, maxY, radiusSq);
         }
 
         for (int y = minY + 1; y < maxY; y++)
         {
-            CastRay(map, px, py, minX, y, radiusSq);
-            CastRay(map, px, py, maxX, y, radiusSq);
+            castRay(map, px, py, minX, y, radiusSq);
+            castRay(map, px, py, maxX, y, radiusSq);
         }
 
         markSeen(map, px, py);
@@ -57,14 +57,13 @@ public static class FovSystem {
     }
 
     // Bresenham's line rays
-    private static void CastRay(TileMap map, int x0, int y0, int x1, int y1, int radiusSq)
+    private static void castRay(TileMap map, int x0, int y0, int x1, int y1, int radiusSq)
     {
         int dx = Math.Abs(x1 - x0);
         int dy = Math.Abs(y1 - y0);
         int sx = x0 < x1 ? 1 : -1;
         int sy = y0 < y1 ? 1 : -1;
         int err = dx - dy;
-
         int curX = x0;
         int curY = y0;
 
