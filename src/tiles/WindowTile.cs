@@ -13,7 +13,7 @@ public class WindowTile : Tile
     public bool isPeeked { get; private set; }
     public List<WindowTile>? windowGroup { get; set; }
 
-    public WindowTile(bool blindsOpen) : base(178, Color.White, Color.Black, true, true, true, true)
+    public WindowTile(bool blindsOpen) : base(178, Color.White, Color.Black, 100, true, true, true, true, true)
     {
         setBlindsState(blindsOpen);
     }

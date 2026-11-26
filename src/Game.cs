@@ -25,13 +25,27 @@ public class Game
 
     int turns = 0;
 
+    static int PANEL_WIDTH = 256;
+    static int STATUS_HEIGHT = 64;
+
     public Game()
     {
-        renderer = new Renderer(TITLE, screenWidth, screenHeight, tileSize, targetFPS);
+        PANEL_WIDTH = (int)(screenWidth * 0.25);
+        STATUS_HEIGHT = (int)(screenHeight * 0.10);
+
+        renderer = new Renderer(
+            TITLE,
+            screenWidth,
+            screenHeight,
+            PANEL_WIDTH,
+            STATUS_HEIGHT,
+            tileSize,
+            targetFPS
+        );
         renderer.loadAtlas("assets/CP437.png");
 
         player = new Player("Player", 100, 0, 0);
-        camera = new Camera(0, 0, renderer.TileWidth, renderer.TileHeight);
+        camera = new Camera(0, 0, renderer.tileWidth, renderer.tileHeight);
 
         entities = [player];
 
@@ -59,7 +73,7 @@ public class Game
                     entity.update(tileMap, entities, player);
                 }
 
-                FovSystem.computeFov(tileMap, player.x, player.y, 15);
+                FovSystem.computeFov(tileMap, player.x, player.y, 25);
             }
 
             String playerModeText = player.playerMode switch
@@ -69,7 +83,7 @@ public class Game
                 _                               => "NORMAL MODE"
             };
 
-            camera.centerOnPosition(player.x, player.y, screenWidth, screenHeight);
+            camera.centerOnPosition(player.x, player.y, renderer.viewWidth, renderer.viewHeight);
 
             Raylib.BeginDrawing();
             renderer.render(tileMap, entities, camera);
@@ -93,10 +107,10 @@ public class Game
 
         if (wheel != 0)
         {
-            renderer.setTileHeight(renderer.TileHeight + (wheel > 0 ? 1 : -1));
+            renderer.setTileHeight(renderer.tileHeight + (wheel > 0 ? 1 : -1));
 
-            camera.tileWidth = renderer.TileWidth;
-            camera.tileHeight = renderer.TileHeight;
+            camera.tileWidth = renderer.tileWidth;
+            camera.tileHeight = renderer.tileHeight;
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Raylib_cs;
 using zombieroad.src.entities;
+using zombieroad.src.systems;
 
 namespace zombieroad.src.tiles;
 
@@ -75,5 +76,55 @@ public class TileMap
         }
 
         Raylib.UnloadImage(img);
+
+        indoorizeSpawnCells(entities);
+        revealBuildingExteriors();
+    }
+
+    private static readonly (int dx, int dy)[] dirs = { (0, -1), (0, 1), (-1, 0), (1, 0) };
+
+    // Spawn pixels carry no floor info, so adopt the indoor floor of an adjacent room tile
+    private void indoorizeSpawnCells(List<Entity> entities)
+    {
+        foreach (Entity e in entities)
+        {
+            foreach (var (dx, dy) in dirs)
+            {
+                int nx = e.x + dx;
+                int ny = e.y + dy;
+
+                if (inBounds(nx, ny) && objects[ny][nx] is FloorTile { isIndoors: true })
+                {
+                    objects[e.y][e.x] = new FloorTile(true);
+                    break;
+                }
+            }
+        }
+    }
+
+    private void revealBuildingExteriors()
+    {
+        for (int y = 0; y < objects.Length; y++)
+        {
+            for (int x = 0; x < objects[y].Length; x++)
+            {
+                Tile? obj = objects[y][x];
+                if (obj is null || obj is FloorTile) continue;
+
+                foreach (var (dx, dy) in dirs)
+                {
+                    int nx = x + dx;
+                    int ny = y + dy;
+
+                    if (!inBounds(nx, ny) || objects[ny][nx] is not null) continue;
+
+                    if (!floor[ny][nx].isIndoors)
+                    {
+                        obj.isExplored = true;
+                        break;
+                    }
+                }
+            }
+        }
     }
 }

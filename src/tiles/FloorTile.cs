@@ -6,7 +6,7 @@ public class FloorTile : Tile
 {
     private static readonly Random random = new Random();
     private static readonly byte[] glyphs = { (byte)' ', (byte)',', (byte)'.', (byte)'`' };
-    private static readonly int GRASS_CHANCE = 25;
+    private static readonly int GRASS_CHANCE = 45;
 
     public FloorTile(bool isIndoors) : base((byte)' ', Color.White, Color.Black, 100, !isIndoors, isIndoors, false, false, false)
     {
@@ -16,6 +16,8 @@ public class FloorTile : Tile
     public override void setIsIndoors(bool isIndoors)
     {
         base.setIsIndoors(isIndoors);
+
+        isExplored = !isIndoors;
 
         int change = (int)random.NextInt64(0, 100);
         int idx = (int)random.NextInt64(0, glyphs.Length);

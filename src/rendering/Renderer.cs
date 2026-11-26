@@ -10,36 +10,52 @@ public class Renderer
     private const int AtlasRows = 8;
 
     private String title;
+
     private int screenWidth;
     private int screenHeight;
-    private int tileSize;
-    private int targetFPS = 240;
 
-    public int TileSize => tileSize;
+    public int viewWidth { get; private set; }
+    public int viewHeight { get; private set; }
+    private int viewOffsetX;
+    private int viewOffsetY;
+    private int statusHeight;
+    private int panelWidth;
+
+    public int tileSize { get; private set; }
+    private int targetFPS = 240;
 
     private int cellWidth;
     private int cellHeight;
 
-    private int tileWidth;
-    private int tileHeight;
-
-    public int TileWidth => tileWidth;
-    public int TileHeight => tileHeight;
+    public int tileWidth { get; private set; }
+    public int tileHeight { get; private set; }
 
     private Texture2D atlas;
 
     // Sets up Renderer object and initializes Raylib
-    public Renderer(String title, int screenWidth, int screenHeight, int tileSize, int targetFPS)
+    public Renderer(String title,
+                    int screenWidth,
+                    int screenHeight,
+                    int panelWidth,
+                    int statusHeight,
+                    int tileSize,
+                    int targetFPS)
     {
         this.title = title;
         this.screenWidth = screenWidth;
         this.screenHeight = screenHeight;
-        this.tileSize = tileSize;
+        this.panelWidth = panelWidth;
+        this.statusHeight = statusHeight;
 
+        viewWidth = screenWidth - panelWidth;
+        viewHeight = screenHeight - statusHeight;
+        viewOffsetX = 0;
+        viewOffsetY = statusHeight;
+
+        this.tileSize = tileSize;
         this.targetFPS = targetFPS;
 
         initRaylib();
-        setTileHeight(tileHeight);
     }
 
     private void initRaylib()
@@ -52,15 +68,26 @@ public class Renderer
     public void render(TileMap tileMap, List<Entity> entities, Camera camera)
     {
         Raylib.ClearBackground(Color.Black);
-        flushBuffer(tileMap, camera);
+
+        Raylib.BeginScissorMode(viewOffsetX, viewOffsetY, viewWidth, viewHeight);
+        drawFloor(tileMap, camera);
         drawObjects(tileMap, entities, camera);
+        Raylib.EndScissorMode();
+
+        drawUI(tileMap, entities);
     }
 
-    private void flushBuffer(TileMap tileMap, Camera camera)
+    private void drawUI(TileMap tileMap, List<Entity> entities)
     {
+        Raylib.DrawLine(0, statusHeight, screenWidth, statusHeight, Color.White);
+        Raylib.DrawLine(viewWidth, statusHeight, viewWidth, screenHeight, Color.White);
+    }
+
+    private void drawFloor(TileMap tileMap, Camera camera)
+    {
+        int cols = (viewWidth / camera.tileWidth) + 1;
+        int rows = (viewHeight / camera.tileHeight) + 1;
         Tile[][] floor = tileMap.floor;
-        int cols = (screenWidth / camera.tileWidth) + 1;
-        int rows = (screenHeight / camera.tileHeight) + 1;
 
         for (int sy = 0; sy < rows; sy++)
         {
@@ -74,12 +101,15 @@ public class Renderer
                 if (worldX < 0 || worldX >= floor[worldY].Length) continue;
 
                 Tile tile = floor[worldY][worldX];
+                Tile? obj = tileMap.objects[worldY][worldX];
+
+                if (obj is not null && !obj.isExplored) continue;
 
                 if (!tile.isExplored) continue;
                 if (tile.glyph == 0 || tile.glyph == 32) continue;
 
-                int pixelX = sx * camera.tileWidth;
-                int pixelY = sy * camera.tileHeight;
+                int pixelX = sx * camera.tileWidth + viewOffsetX;
+                int pixelY = sy * camera.tileHeight + viewOffsetY;
 
                 Rectangle srcRec = new Rectangle(
                     tile.glyph % AtlasColumns * cellWidth,
@@ -99,8 +129,8 @@ public class Renderer
     {
         Tile[][] floor = tileMap.floor;
         Tile?[][] objects = tileMap.objects;
-        int cols = (screenWidth / camera.tileWidth) + 1;
-        int rows = (screenHeight / camera.tileHeight) + 1;
+        int cols = (viewWidth / camera.tileWidth) + 1;
+        int rows = (viewHeight / camera.tileHeight) + 1;
 
         for (int sy = 0; sy < rows; sy++)
         {
@@ -115,8 +145,8 @@ public class Renderer
                 Tile? obj = objects[worldY][worldX];
                 if (obj is null || !obj.isExplored) continue;
 
-                int pixelX = sx * camera.tileWidth;
-                int pixelY = sy * camera.tileHeight;
+                int pixelX = sx * camera.tileWidth + viewOffsetX;
+                int pixelY = sy * camera.tileHeight + viewOffsetY;
 
                 Raylib.DrawRectangle(pixelX, pixelY, camera.tileWidth, camera.tileHeight, Color.Black);
 
@@ -139,8 +169,8 @@ public class Renderer
 
             if (sx < 0 || sx >= cols || sy < 0 || sy >= rows) continue;
 
-            int pixelX = sx * camera.tileWidth;
-            int pixelY = sy * camera.tileHeight;
+            int pixelX = sx * camera.tileWidth + viewOffsetX;
+            int pixelY = sy * camera.tileHeight + viewOffsetY;
 
             if (!floor[entity.y][entity.x].isVisible) continue;
 
@@ -170,7 +200,8 @@ public class Renderer
         cellWidth = atlas.Width / AtlasColumns;
         cellHeight = atlas.Height / AtlasRows;
 
-        tileHeight = tileSize;
+        setTileHeight(tileSize);
+
         tileWidth = (int)MathF.Round(tileHeight * (cellWidth / (float)cellHeight));
     }
 

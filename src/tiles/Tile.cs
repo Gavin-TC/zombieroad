@@ -15,7 +15,7 @@ public class Tile {
     public bool isDestructible { get; set; } = true;
     public bool isIndoors { get; set; }
     public bool isVisible { get; set; } = false;
-    public bool isExplored { get; set; } = true; // Has the player seen this tile before
+    public bool isExplored { get; set; } = false; // Has the player seen this tile before
     public bool blocksMovement { get; set; }
     public bool blocksVision { get; set; }
     public bool blocksLight { get; set; }

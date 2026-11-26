@@ -11,6 +11,11 @@ public static class Pathfinding
         (-1, -1), (1, -1), (-1, 1), (1, 1)  // Diagonal
     };
 
+    public static readonly (int dx, int dy)[] cardinalDirs =
+    {
+        (0, -1), (0, 1), (-1, 0), (1, 0)
+    };
+
     public static (int x, int y)? FindNextStepGbfs(
         TileMap map,
         List<Entity> entities,
