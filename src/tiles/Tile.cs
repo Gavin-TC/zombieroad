@@ -8,6 +8,11 @@ public class Tile {
     public Color fgColor;
     public Color bgColor;
 
+    public int health = 100;
+    public Func<Tile?>? debris { get; set; }   // Optional tile that replaces the current one after destruction
+    public Func<Entity?>? drop { get; set; }   // Optional entity/tile that replaces the current tile after destruction
+
+    public bool isDestructible { get; set; } = true;
     public bool isIndoors { get; set; }
     public bool isVisible { get; set; } = false;
     public bool isExplored { get; set; } = true; // Has the player seen this tile before
@@ -19,6 +24,8 @@ public class Tile {
         byte glyph,
         Color fgColor,
         Color bgColor,
+        int health,
+        bool isDestructible,
         bool isIndoors,
         bool blocksMovement,
         bool blocksVision,
@@ -29,6 +36,9 @@ public class Tile {
         this.fgColor = fgColor;
         this.bgColor = bgColor;
 
+        this.health = health;
+
+        this.isDestructible = isDestructible;
         this.isIndoors = isIndoors;
         this.blocksMovement = blocksMovement;
         this.blocksVision = blocksVision;
@@ -38,6 +48,25 @@ public class Tile {
     public virtual bool interact(TileMap map, List<Entity> entities, Entity interactor, int x, int y)
     {
         return false;
+    }
+
+    public virtual bool damage(TileMap map, int x, int y, int damage)
+    {
+        if (!isDestructible) return false;
+
+        health = Math.Max(health - damage, 0);
+
+        if (health == 0) destroy(map, x, y);
+        else             onDamaged();
+
+        return true;
+    }
+
+    protected virtual void onDamaged() {}
+    
+    protected virtual void destroy(TileMap map, int x, int y)
+    {
+        map.objects[y][x] = debris?.Invoke();
     }
 
     public virtual void setIsIndoors(bool isIndoors)

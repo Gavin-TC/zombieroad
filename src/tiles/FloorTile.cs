@@ -8,7 +8,7 @@ public class FloorTile : Tile
     private static readonly byte[] glyphs = { (byte)' ', (byte)',', (byte)'.', (byte)'`' };
     private static readonly int GRASS_CHANCE = 25;
 
-    public FloorTile(bool isIndoors) : base((byte)' ', Color.White, Color.Black, isIndoors, false, false, false)
+    public FloorTile(bool isIndoors) : base((byte)' ', Color.White, Color.Black, 100, !isIndoors, isIndoors, false, false, false)
     {
         setIsIndoors(isIndoors);
     }

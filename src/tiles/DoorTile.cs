@@ -12,7 +12,7 @@ public class DoorTile : Tile
     private bool isBlocked { get; set; } // Is the door currently blocked, i.e. boarded
 
     public DoorTile(bool isOpen = false, bool isLocked = false, bool isBlocked = false)
-        : base(isOpen ? openedGlyph : closedGlyph, Color.Brown, Color.Black, true, !isOpen, true, true)
+        : base(isOpen ? openedGlyph : closedGlyph, Color.Brown, Color.Black, 100, true, true, !isOpen, true, true)
     {
         setOpenState(isOpen);
         this.isLocked = isLocked;
