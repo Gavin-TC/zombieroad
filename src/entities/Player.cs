@@ -29,39 +29,28 @@ public class Player : Entity
 
         // Turn skip
         if (Raylib.IsKeyPressedRepeat(KeyboardKey.Period) ||
-            keyPressed == KeyboardKey.Period)
-        {
-            return true;
-        }
+            keyPressed == KeyboardKey.Period) return true;
 
-        if (keyPressed == KeyboardKey.Escape)
+        if (keyPressed == KeyboardKey.Escape && !playerMode.Equals(PlayerMode.NORMAL_MODE))
         {
-            if (!playerMode.Equals(PlayerMode.NORMAL_MODE))
-            {
-                playerMode = PlayerMode.NORMAL_MODE;
-                return false;
-            }
-            else
-            {
-                // Pause menu or somethin
-                return false;
-            }
+            playerMode = PlayerMode.NORMAL_MODE;
+            return false;
         }
-        else if (keyPressed == KeyboardKey.Space)
+        if (keyPressed == KeyboardKey.Space)
         {
             playerMode = PlayerMode.INTERACT_MODE;
             return false;
         }
-        else if (keyPressed == KeyboardKey.P)
+        if (keyPressed == KeyboardKey.P)
         {
             playerMode = PlayerMode.PEEK_MODE;
             return false;
         }
-
-        bool left  = Raylib.IsKeyDown(KeyboardKey.A);
-        bool right = Raylib.IsKeyDown(KeyboardKey.D);
+        
         bool up    = Raylib.IsKeyDown(KeyboardKey.W);
         bool down  = Raylib.IsKeyDown(KeyboardKey.S);
+        bool left  = Raylib.IsKeyDown(KeyboardKey.A);
+        bool right = Raylib.IsKeyDown(KeyboardKey.D);
 
         bool moveRequested =
             Raylib.IsKeyPressed(KeyboardKey.A) || Raylib.IsKeyPressedRepeat(KeyboardKey.A) || 

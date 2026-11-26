@@ -11,8 +11,8 @@ public class Game
 {
     const String TITLE = "Zombie Road";
 
-    int screenWidth = 1440;
-    int screenHeight = 1080;
+    int screenWidth = 1280;
+    int screenHeight = 720;
     int targetFPS = 240;
     int tileSize = 32;
 
@@ -104,13 +104,17 @@ public class Game
     private void handleInput()
     {
         float wheel = Raylib.GetMouseWheelMove();
+        bool up   = Raylib.IsKeyPressed(KeyboardKey.Minus);
+        bool down = Raylib.IsKeyPressed(KeyboardKey.Equal);
+        int delta = 0;
+        int incr = 4;
 
-        if (wheel != 0)
-        {
-            renderer.setTileHeight(renderer.tileHeight + (wheel > 0 ? 1 : -1));
-
-            camera.tileWidth = renderer.tileWidth;
-            camera.tileHeight = renderer.tileHeight;
-        }
+        if (wheel != 0) delta = wheel > 0 ? -incr : incr;
+        else if (up)    delta = up ? incr : -incr;
+        else if (down)  delta = down ? -incr : incr;
+        
+        renderer.setTileHeight(renderer.tileHeight + delta);
+        camera.tileWidth = renderer.tileWidth;
+        camera.tileHeight = renderer.tileHeight;
     }
 }

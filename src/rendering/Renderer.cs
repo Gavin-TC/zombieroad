@@ -202,7 +202,7 @@ public class Renderer
 
     public void setTileHeight(int tileHeight)
     {
-        tileHeight = Math.Clamp(tileHeight, 32, 64);
+        tileHeight = Math.Clamp(tileHeight, 16, 64);
         this.tileHeight = tileHeight;
         tileSize = tileHeight;
         tileWidth = (int)MathF.Round(tileHeight * (cellWidth / (float)cellHeight));
