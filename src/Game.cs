@@ -1,4 +1,4 @@
-﻿using Raylib_cs;
+using Raylib_cs;
 using System.Collections;
 using System.Numerics;
 using zombieroad.src.entities;
@@ -49,7 +49,7 @@ public class Game
 
         entities = [player];
 
-        tileMap = new TileMap(screenWidth, screenHeight);
+        tileMap = new TileMap();
         tileMap.generateMapFromImage("maps/map_01.png", entities, player);
     }
 

@@ -82,7 +82,7 @@ public class Player : Entity
                     int tx = x + dx;
                     int ty = y + dy;
                     if (!tileMap.inBounds(tx, ty)) return false;
-                    if (tileMap.objects[ty][tx] is WindowTile) return false; // No bump interacting windows
+                    if (tileMap.getObject(tx, ty) is WindowTile) return false; // No bump interacting windows
 
                     bool interacted = tryInteract(tileMap, entities, dx, dy);
                     if (interacted) endPeek();
@@ -134,10 +134,10 @@ public class Player : Entity
 
     private bool tryPeek(TileMap tileMap, int dx, int dy)
     {
-        if (!tileMap.objects[y][x]?.isIndoors ?? true) return false;
+        if (!tileMap.getObject(x, y)?.isIndoors ?? true) return false;
         if (!tileMap.inBounds(x + dx, y + dy)) return false;
 
-        Tile? target = tileMap.objects[y + dy][x + dx];
+        Tile? target = tileMap.getObject(x + dx, y + dy);
 
         if (target is not WindowTile window || window.blindsOpen) return false;
 
@@ -158,7 +158,7 @@ public class Player : Entity
     {
         if (!tileMap.inBounds(x + dx, y + dy)) return false;
 
-        Tile? targetTile = tileMap.objects[y + dy][x + dx];
+        Tile? targetTile = tileMap.getObject(x + dx, y + dy);
         if (targetTile is null) return false;
 
         return targetTile.interact(tileMap, entities, this, x + dx, y + dy);

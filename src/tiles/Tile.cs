@@ -66,7 +66,7 @@ public class Tile {
     
     protected virtual void destroy(TileMap map, int x, int y)
     {
-        map.objects[y][x] = debris?.Invoke();
+        map.setObject(x, y, debris?.Invoke());
     }
 
     public virtual void setIsIndoors(bool isIndoors)

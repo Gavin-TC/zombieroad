@@ -1,57 +1,61 @@
-﻿using Raylib_cs;
+using Raylib_cs;
 using zombieroad.src.entities;
-using zombieroad.src.systems;
 
 namespace zombieroad.src.tiles;
 
 public class TileMap
 {
-    public Tile[][] floor;
-    public Tile?[][] objects;
-
-    public TileMap(int width, int height)
-    {
-        floor = new Tile[height][];
-        objects = new Tile[height][];
-    }
+    private Tile[][] floor = [];
+    private Tile?[][] objects = [];
 
     public int height => floor.Length;
     public int width => floor.Length > 0 && floor[0] is not null ? floor[0].Length : 0;
 
+    // Is this cell part of the generated/loaded world?
     public bool inBounds(int x, int y) => x >= 0 && y >= 0 && y < height && x < width;
-    public bool isIndoors(int x, int y) => objects[y][x]?.isIndoors ?? floor[y][x].isIndoors;
 
-    public Tile getTop(int x, int y) => objects[y][x] ?? floor[y][x];
-    public bool blocksMovement(int x, int y) => objects[y][x]?.blocksMovement ?? floor[y][x].blocksMovement;
-    public bool blocksVision(int x, int y) => objects[y][x]?.blocksVision ?? floor[y][x].blocksVision;
+    public Tile getFloor(int x, int y) => floor[y][x];
+    public Tile? getObject(int x, int y) => objects[y][x];
+    public void setObject(int x, int y, Tile? tile) => objects[y][x] = tile;
 
-    public void generateMapFromImage(String filepath, List<Entity> entities, Player player)
+    public Tile getTop(int x, int y) => getObject(x, y) ?? getFloor(x, y);
+    public bool isIndoors(int x, int y) => getTop(x, y).isIndoors;
+    public bool blocksMovement(int x, int y) => getTop(x, y).blocksMovement;
+    public bool blocksVision(int x, int y) => getTop(x, y).blocksVision;
+
+    // Stamps the image onto the map with its top-left corner at (offsetX, offsetY)
+    public void generateMapFromImage(String filepath, List<Entity> entities, Player player, int offsetX = 0, int offsetY = 0)
     {
         Image img = Raylib.LoadImage(filepath);
-        floor = new Tile[img.Height][];
-        objects = new Tile[img.Height][];
+        floor = new Tile[offsetY + img.Height][];
+        objects = new Tile?[offsetY + img.Height][];
 
-        for (int y = 0; y < img.Height; y++)
+        for (int y = 0; y < floor.Length; y++)
         {
-            floor[y] = new Tile[img.Width];
-            objects[y] = new Tile?[img.Width];
+            floor[y] = new Tile[offsetX + img.Width];
+            objects[y] = new Tile?[offsetX + img.Width];
 
-            for (int x = 0; x < img.Width; x++)
+            for (int x = 0; x < floor[y].Length; x++) floor[y][x] = new FloorTile(false);
+        }
+
+        for (int iy = 0; iy < img.Height; iy++)
+        {
+            for (int ix = 0; ix < img.Width; ix++)
             {
-                Color pixel = Raylib.GetImageColor(img, x, y);
+                int x = ix + offsetX;
+                int y = iy + offsetY;
+                Color pixel = Raylib.GetImageColor(img, ix, iy);
 
-                floor[y][x] = new FloorTile(false);
-
-                if (pixel.Equals(Color.Black))     objects[y][x] = new WallTile();
-                if (pixel.Equals(Color.Brown))     objects[y][x] = new DoorTile(false);
-                if (pixel.Equals(Color.Gray))      objects[y][x] = new FloorTile(true);
+                if (pixel.Equals(Color.Black))     setObject(x, y, new WallTile());
+                if (pixel.Equals(Color.Brown))     setObject(x, y, new DoorTile(false));
+                if (pixel.Equals(Color.Gray))      setObject(x, y, new FloorTile(true));
                 if (pixel.Equals(Color.Red))
                 {
                     WindowTile windowTile = new WindowTile(false);
                     WindowTile? neighbor = null;
 
-                    if      (x > 0 && objects[y][x - 1] is WindowTile leftWin) neighbor = leftWin;
-                    else if (y > 0 && objects[y - 1][x] is WindowTile topWin)  neighbor = topWin;
+                    if      (ix > 0 && getObject(x - 1, y) is WindowTile leftWin) neighbor = leftWin;
+                    else if (iy > 0 && getObject(x, y - 1) is WindowTile topWin)  neighbor = topWin;
 
                     if (neighbor != null)
                     {
@@ -60,14 +64,14 @@ public class TileMap
                         windowTile.windowGroup = neighbor.windowGroup;
                     }
 
-                    objects[y][x] = windowTile;
+                    setObject(x, y, windowTile);
                 }
-                if (pixel.Equals(Color.Blue)) 
+                if (pixel.Equals(Color.Blue))
                 {
                     player.setX(x);
                     player.setY(y);
                 }
-                if (pixel.Equals(Color.Green)) 
+                if (pixel.Equals(Color.Green))
                 {
                     Zombie zombie = new Zombie("Zombie", 100, x, y);
                     entities.Add(zombie);
@@ -75,10 +79,12 @@ public class TileMap
             }
         }
 
+        int stampWidth = img.Width;
+        int stampHeight = img.Height;
         Raylib.UnloadImage(img);
 
         indoorizeSpawnCells(entities);
-        revealBuildingExteriors();
+        revealBuildingExteriors(offsetX, offsetY, stampWidth, stampHeight);
     }
 
     private static readonly (int dx, int dy)[] dirs = { (0, -1), (0, 1), (-1, 0), (1, 0) };
@@ -93,22 +99,22 @@ public class TileMap
                 int nx = e.x + dx;
                 int ny = e.y + dy;
 
-                if (inBounds(nx, ny) && objects[ny][nx] is FloorTile { isIndoors: true })
+                if (inBounds(nx, ny) && getObject(nx, ny) is FloorTile { isIndoors: true })
                 {
-                    objects[e.y][e.x] = new FloorTile(true);
+                    setObject(e.x, e.y, new FloorTile(true));
                     break;
                 }
             }
         }
     }
 
-    private void revealBuildingExteriors()
+    private void revealBuildingExteriors(int startX, int startY, int w, int h)
     {
-        for (int y = 0; y < objects.Length; y++)
+        for (int y = startY; y < startY + h; y++)
         {
-            for (int x = 0; x < objects[y].Length; x++)
+            for (int x = startX; x < startX + w; x++)
             {
-                Tile? obj = objects[y][x];
+                Tile? obj = getObject(x, y);
                 if (obj is null || obj is FloorTile) continue;
 
                 foreach (var (dx, dy) in dirs)
@@ -116,9 +122,9 @@ public class TileMap
                     int nx = x + dx;
                     int ny = y + dy;
 
-                    if (!inBounds(nx, ny) || objects[ny][nx] is not null) continue;
+                    if (!inBounds(nx, ny) || getObject(nx, ny) is not null) continue;
 
-                    if (!floor[ny][nx].isIndoors)
+                    if (!getFloor(nx, ny).isIndoors)
                     {
                         obj.isExplored = true;
                         break;

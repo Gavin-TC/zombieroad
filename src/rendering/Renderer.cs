@@ -87,21 +87,19 @@ public class Renderer
     {
         int cols = (viewWidth / camera.tileWidth) + 1;
         int rows = (viewHeight / camera.tileHeight) + 1;
-        Tile[][] floor = tileMap.floor;
 
         for (int sy = 0; sy < rows; sy++)
         {
             int worldY = camera.y + sy;
-            if (worldY < 0 || worldY >= floor.Length) continue;
 
             for (int sx = 0; sx < cols; sx++)
             {
                 int worldX = camera.x + sx;
 
-                if (worldX < 0 || worldX >= floor[worldY].Length) continue;
+                if (!tileMap.inBounds(worldX, worldY)) continue;
 
-                Tile tile = floor[worldY][worldX];
-                Tile? obj = tileMap.objects[worldY][worldX];
+                Tile tile = tileMap.getFloor(worldX, worldY);
+                Tile? obj = tileMap.getObject(worldX, worldY);
 
                 if (obj is not null && !obj.isExplored) continue;
 
@@ -127,22 +125,19 @@ public class Renderer
 
     public void drawObjects(TileMap tileMap, List<Entity> entities, Camera camera)
     {
-        Tile[][] floor = tileMap.floor;
-        Tile?[][] objects = tileMap.objects;
         int cols = (viewWidth / camera.tileWidth) + 1;
         int rows = (viewHeight / camera.tileHeight) + 1;
 
         for (int sy = 0; sy < rows; sy++)
         {
             int worldY = camera.y + sy;
-            if (worldY < 0 || worldY >= objects.Length) continue;
 
             for (int sx = 0; sx < cols; sx++)
             {
                 int worldX = camera.x + sx;
-                if (worldX < 0 || worldX >= objects[worldY].Length) continue;
+                if (!tileMap.inBounds(worldX, worldY)) continue;
 
-                Tile? obj = objects[worldY][worldX];
+                Tile? obj = tileMap.getObject(worldX, worldY);
                 if (obj is null || !obj.isExplored) continue;
 
                 int pixelX = sx * camera.tileWidth + viewOffsetX;
@@ -172,7 +167,7 @@ public class Renderer
             int pixelX = sx * camera.tileWidth + viewOffsetX;
             int pixelY = sy * camera.tileHeight + viewOffsetY;
 
-            if (!floor[entity.y][entity.x].isVisible) continue;
+            if (!tileMap.getFloor(entity.x, entity.y).isVisible) continue;
 
             Raylib.DrawRectangle(pixelX, pixelY, camera.tileWidth, camera.tileHeight, Color.Black);
 

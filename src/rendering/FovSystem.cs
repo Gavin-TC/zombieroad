@@ -3,20 +3,21 @@ using zombieroad.src.tiles;
 namespace zombieroad.src.rendering;
 
 public static class FovSystem {
+    // Cells marked visible by the previous computeFov call, cleared at the start of the next one
+    private static readonly List<(int x, int y)> visibleCells = new();
+
     public static void computeFov(TileMap map, int px, int py, int radius)
     {
         if (map is null || map.height == 0) return;
 
-        for (int y = 0; y < map.height; y++)
+        foreach (var (x, y) in visibleCells)
         {
-            for (int x = 0; x < map.width; x++)
-            {
-                map.floor[y][x].isVisible = false;
+            map.getFloor(x, y).isVisible = false;
 
-                Tile? obj = map.objects[y][x];
-                if (obj is not null) obj.isVisible = false;
-            }
+            Tile? obj = map.getObject(x, y);
+            if (obj is not null) obj.isVisible = false;
         }
+        visibleCells.Clear();
 
         int minX = Math.Max(0, px - radius);
         int maxX = Math.Min(map.width - 1, px + radius);
@@ -41,11 +42,13 @@ public static class FovSystem {
 
     private static void markSeen(TileMap map, int x, int y)
     {
-        Tile floorTile = map.floor[y][x];
+        Tile floorTile = map.getFloor(x, y);
+        if (!floorTile.isVisible) visibleCells.Add((x, y));
+
         floorTile.isVisible = true;
         floorTile.isExplored = true;
 
-        Tile? obj = map.objects[y][x];
+        Tile? obj = map.getObject(x, y);
         if (obj is not null)
         {
             obj.isVisible = true;

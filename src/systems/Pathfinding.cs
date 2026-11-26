@@ -27,10 +27,7 @@ public static class Pathfinding
     {
         if (startX == goalX && startY == goalY) return null;
 
-        int width = map.width;
-        int height = map.height;
-
-        if (!inBounds(goalX, goalY, width, height)) return null;
+        if (!map.inBounds(goalX, goalY)) return null;
 
         var frontier = new PriorityQueue<(int x, int y), int>();
         var cameFrom = new Dictionary<(int x, int y), (int x, int y)>();

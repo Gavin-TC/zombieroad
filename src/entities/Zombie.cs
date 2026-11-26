@@ -53,7 +53,7 @@ public class Zombie : Entity
 
     private void performAction(TileMap map, List<Entity> entities, Player player)
     {
-        Tile tile = map.floor[y][x];
+        Tile tile = map.getFloor(x, y);
         int playerDist = Math.Abs(x - player.x) + Math.Abs(y - player.y);
         int attackDist = Math.Max(Math.Abs(x - player.x), Math.Abs(y - player.y));
         bool targetBlocked = player.x == blockedX && player.y == blockedY;
